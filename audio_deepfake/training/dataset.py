@@ -56,14 +56,26 @@ class AudioDeepfakeDataset(Dataset):
         return (waveform - np.mean(waveform)) / (np.std(waveform) + 1e-8)
 
     def _compute_log_mel(self, waveform):
-        mel = librosa.feature.melspectrogram(
-            y=waveform,
-            sr=SAMPLE_RATE,
-            n_mels=N_MELS,
-            n_fft=N_FFT,
-            hop_length=HOP_LENGTH
-        )
-        return librosa.power_to_db(mel)
+    mel = librosa.feature.melspectrogram(
+        y=waveform,
+        sr=SAMPLE_RATE,
+        n_mels=N_MELS,
+        n_fft=N_FFT,
+        hop_length=HOP_LENGTH
+    )
+
+    mel = librosa.power_to_db(mel)
+
+    # ✅ FIX: pad ou crop sur le temps (axis=1)
+    target_len = 400  # 👈 tu peux ajuster (important)
+
+    if mel.shape[1] < target_len:
+        pad_width = target_len - mel.shape[1]
+        mel = np.pad(mel, ((0, 0), (0, pad_width)), mode='constant')
+    else:
+        mel = mel[:, :target_len]
+
+    return mel
 
 
 # ✅ FONCTIONS EN DEHORS DE LA CLASSE
