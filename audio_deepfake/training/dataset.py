@@ -64,3 +64,44 @@ class AudioDeepfakeDataset(Dataset):
             hop_length=HOP_LENGTH
         )
         return librosa.power_to_db(mel)
+
+
+# ✅ FONCTIONS EN DEHORS DE LA CLASSE
+
+def load_dataset_paths(data_dir):
+    real_paths = []
+    fake_paths = []
+
+    real_dir = os.path.join(data_dir, "real")
+    fake_dir = os.path.join(data_dir, "fake")
+
+    for root, _, files in os.walk(real_dir):
+        for f in files:
+            if f.endswith(".wav"):
+                real_paths.append(os.path.join(root, f))
+
+    for root, _, files in os.walk(fake_dir):
+        for f in files:
+            if f.endswith(".wav"):
+                fake_paths.append(os.path.join(root, f))
+
+    file_paths = real_paths + fake_paths
+    labels = [0] * len(real_paths) + [1] * len(fake_paths)
+
+    return file_paths, labels
+
+
+def get_kfold_splits(file_paths, labels, n_splits=5):
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+
+    for fold_idx, (train_idx, val_idx) in enumerate(skf.split(file_paths, labels)):
+        train_paths = [file_paths[i] for i in train_idx]
+        val_paths = [file_paths[i] for i in val_idx]
+
+        train_labels = [labels[i] for i in train_idx]
+        val_labels = [labels[i] for i in val_idx]
+
+        train_ds = AudioDeepfakeDataset(train_paths, train_labels, augment=True)
+        val_ds = AudioDeepfakeDataset(val_paths, val_labels, augment=False)
+
+        yield fold_idx, train_ds, val_ds
