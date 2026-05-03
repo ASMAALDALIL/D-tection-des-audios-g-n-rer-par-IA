@@ -25,7 +25,9 @@ class SincConv(nn.Module):
         band = band/(2*(f2-f1))
         return F.conv1d(x, band.unsqueeze(1), padding=self.kernel_size//2)
 
-    def hz2mel(self, hz): return 2595*torch.log10(1+hz/700)
+    def hz2mel(self, hz):
+    hz = torch.tensor(hz, dtype=torch.float32)
+    return 2595 * torch.log10(1 + hz / 700)
     def mel2hz(self, mel): return 700*(10**(mel/2595)-1)
 
 class ResidualBlock(nn.Module):
