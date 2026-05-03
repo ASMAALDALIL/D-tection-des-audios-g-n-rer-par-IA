@@ -17,6 +17,7 @@ class AudioDeepfakeDataset(Dataset):
         self.file_paths = file_paths
         self.labels = labels
         self.augment = augment
+
         if augment:
             from training.augmentation import get_augmentation_pipeline
             self.aug_pipeline = get_augmentation_pipeline()
@@ -31,7 +32,10 @@ class AudioDeepfakeDataset(Dataset):
         waveform, _ = librosa.load(path, sr=SAMPLE_RATE, mono=True)
 
         if self.augment:
-            waveform = self.aug_pipeline(samples=waveform.astype(np.float32), sample_rate=SAMPLE_RATE)
+            waveform = self.aug_pipeline(
+                samples=waveform.astype(np.float32),
+                sample_rate=SAMPLE_RATE
+            )
 
         wav_w2v = self._pad_or_crop(waveform, MAX_WAV_LEN)
         wav_w2v = self._normalize(wav_w2v)
@@ -48,7 +52,10 @@ class AudioDeepfakeDataset(Dataset):
 
     def _pad_or_crop(self, waveform, target_len):
         if len(waveform) < target_len:
-            waveform = np.tile(waveform, int(np.ceil(target_len / len(waveform))))
+            waveform = np.tile(
+                waveform,
+                int(np.ceil(target_len / len(waveform)))
+            )
         waveform = waveform[:target_len]
         return waveform.astype(np.float32)
 
@@ -56,29 +63,29 @@ class AudioDeepfakeDataset(Dataset):
         return (waveform - np.mean(waveform)) / (np.std(waveform) + 1e-8)
 
     def _compute_log_mel(self, waveform):
-    mel = librosa.feature.melspectrogram(
-        y=waveform,
-        sr=SAMPLE_RATE,
-        n_mels=N_MELS,
-        n_fft=N_FFT,
-        hop_length=HOP_LENGTH
-    )
+        mel = librosa.feature.melspectrogram(
+            y=waveform,
+            sr=SAMPLE_RATE,
+            n_mels=N_MELS,
+            n_fft=N_FFT,
+            hop_length=HOP_LENGTH
+        )
 
-    mel = librosa.power_to_db(mel)
+        mel = librosa.power_to_db(mel)
 
-    # ✅ FIX: pad ou crop sur le temps (axis=1)
-    target_len = 400  # 👈 tu peux ajuster (important)
+        target_len = 400
 
-    if mel.shape[1] < target_len:
-        pad_width = target_len - mel.shape[1]
-        mel = np.pad(mel, ((0, 0), (0, pad_width)), mode='constant')
-    else:
-        mel = mel[:, :target_len]
+        if mel.shape[1] < target_len:
+            pad_width = target_len - mel.shape[1]
+            mel = np.pad(
+                mel,
+                ((0, 0), (0, pad_width)),
+                mode='constant'
+            )
+        else:
+            mel = mel[:, :target_len]
 
-    return mel
-
-
-# ✅ FONCTIONS EN DEHORS DE LA CLASSE
+        return mel
 
 def load_dataset_paths(data_dir):
     real_paths = []
@@ -100,31 +107,43 @@ def load_dataset_paths(data_dir):
     file_paths = real_paths + fake_paths
     labels = [0] * len(real_paths) + [1] * len(fake_paths)
 
-    # ✅ calcul du poids de classe (important pour dataset déséquilibré)
     n_real = len(real_paths)
     n_fake = len(fake_paths)
-
-    import torch
-
-    pos_weight = torch.tensor([n_real / (n_fake + 1e-8)], dtype=torch.float32)
+    pos_weight = torch.tensor(
+        [n_real / (n_fake + 1e-8)],
+        dtype=torch.float32
+    )
 
     print(f"Dataset chargé : {n_real} real, {n_fake} fake")
     print(f"Poids de classe (fake) : {pos_weight.item():.3f}")
 
     return file_paths, labels, pos_weight
 
-
 def get_kfold_splits(file_paths, labels, n_splits=5):
-    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+    skf = StratifiedKFold(
+        n_splits=n_splits,
+        shuffle=True,
+        random_state=42
+    )
 
     for fold_idx, (train_idx, val_idx) in enumerate(skf.split(file_paths, labels)):
+
         train_paths = [file_paths[i] for i in train_idx]
         val_paths = [file_paths[i] for i in val_idx]
 
         train_labels = [labels[i] for i in train_idx]
         val_labels = [labels[i] for i in val_idx]
 
-        train_ds = AudioDeepfakeDataset(train_paths, train_labels, augment=True)
-        val_ds = AudioDeepfakeDataset(val_paths, val_labels, augment=False)
+        train_ds = AudioDeepfakeDataset(
+            train_paths,
+            train_labels,
+            augment=True
+        )
+
+        val_ds = AudioDeepfakeDataset(
+            val_paths,
+            val_labels,
+            augment=False
+        )
 
         yield fold_idx, train_ds, val_ds
