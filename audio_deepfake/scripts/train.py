@@ -1,7 +1,7 @@
 from training.cross_val import run_cross_validation
 
 CONFIG = {
-    'data_dir': 'data/',
+    'data_dir': '/content/drive/MyDrive/data',
     'n_folds': 5,
     'wav2vec2_name': 'facebook/wav2vec2-base',
     'embedding_dim': 256,
