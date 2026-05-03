@@ -97,7 +97,7 @@ def load_dataset_paths(data_dir):
     pos_weight = torch.tensor([n_real / (n_fake + 1e-8)], dtype=torch.float32)
 
     print(f"Dataset chargé : {n_real} real, {n_fake} fake")
-    print(f"Poids de classe (fake) : {class_weights[1]:.3f}")
+    print(f"Poids de classe (fake) : {pos_weight.item():.3f}")
 
     return file_paths, labels, pos_weight
 
