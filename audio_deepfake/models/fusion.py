@@ -24,7 +24,14 @@ class CrossModalAttention(nn.Module):
         return torch.cat([x[:,0], x[:,1], x[:,2]], dim=-1), weights
 
 class FusionModel(nn.Module):
-    def __init__(self, wav2vec2_name="facebook/wav2vec2-base", embedding_dim=256):
+    class FusionModel(nn.Module):
+    def __init__(
+        self,
+        wav2vec2_name="facebook/wav2vec2-base",
+        embedding_dim=256,
+        dropout=0.3,
+        freeze_wav2vec_cnn=False
+    ):
         super().__init__()
         from models.wav2vec2 import Wav2Vec2Encoder
         from models.aasist import AASISTEncoder
