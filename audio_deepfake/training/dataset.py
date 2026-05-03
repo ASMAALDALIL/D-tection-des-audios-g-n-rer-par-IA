@@ -88,7 +88,19 @@ def load_dataset_paths(data_dir):
     file_paths = real_paths + fake_paths
     labels = [0] * len(real_paths) + [1] * len(fake_paths)
 
-    return file_paths, labels
+    # ✅ calcul du poids de classe (important pour dataset déséquilibré)
+    n_real = len(real_paths)
+    n_fake = len(fake_paths)
+
+    class_weights = {
+        0: 1.0,
+        1: n_real / (n_fake + 1e-8)
+    }
+
+    print(f"Dataset chargé : {n_real} real, {n_fake} fake")
+    print(f"Poids de classe (fake) : {class_weights[1]:.3f}")
+
+    return file_paths, labels, class_weights
 
 
 def get_kfold_splits(file_paths, labels, n_splits=5):
