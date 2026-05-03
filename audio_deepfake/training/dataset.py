@@ -92,15 +92,14 @@ def load_dataset_paths(data_dir):
     n_real = len(real_paths)
     n_fake = len(fake_paths)
 
-    class_weights = {
-        0: 1.0,
-        1: n_real / (n_fake + 1e-8)
-    }
+    import torch
+
+    pos_weight = torch.tensor([n_real / (n_fake + 1e-8)], dtype=torch.float32)
 
     print(f"Dataset chargé : {n_real} real, {n_fake} fake")
     print(f"Poids de classe (fake) : {class_weights[1]:.3f}")
 
-    return file_paths, labels, class_weights
+    return file_paths, labels, pos_weight
 
 
 def get_kfold_splits(file_paths, labels, n_splits=5):
