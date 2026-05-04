@@ -11,7 +11,13 @@ def evaluate(checkpoint_path, data_dir, batch_size=16):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     ckpt = torch.load(checkpoint_path, map_location=device)
-    model = FusionModel()
+
+    model = FusionModel(
+        wav2vec2_name='facebook/wav2vec2-base',
+        embedding_dim=256,
+        dropout=0.3
+    )
+
     model.load_state_dict(ckpt['model_state'])
     model.to(device)
     model.eval()
@@ -29,8 +35,9 @@ def evaluate(checkpoint_path, data_dir, batch_size=16):
                 batch['log_mel'].to(device),
                 batch['wav_raw'].to(device)
             )
-            all_labels.extend(batch['label'].numpy())
-            all_logits.extend(logits.squeeze(1).cpu().numpy())
+
+            all_labels.extend(batch['label'].cpu().numpy())
+            all_logits.extend(logits.squeeze(1).detach().cpu().numpy())
 
     metrics = compute_all_metrics(np.array(all_labels), np.array(all_logits))
 
@@ -38,7 +45,7 @@ def evaluate(checkpoint_path, data_dir, batch_size=16):
     print(f"  Accuracy : {metrics['accuracy']:.2f}%")
     print(f"  F1-Score : {metrics['f1']:.2f}%")
     print(f"  EER      : {metrics['eer']:.2f}%")
-    print(f"  Threshold: {metrics['threshold']:.4f}")
+    print(f"  Threshold: {metrics.get('eer_threshold', 0):.4f}")
 
     return metrics
 
