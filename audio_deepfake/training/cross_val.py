@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import os
 from torch.utils.data import DataLoader
 
 from training.dataset import load_dataset_paths, get_kfold_splits
@@ -15,6 +16,8 @@ def run_cross_validation(data_dir, config):
         file_paths, labels,
         n_splits=config.get('n_folds', 5)
     ):
+
+        print(f"\n========== FOLD {fold_idx} ==========")
 
         train_loader = DataLoader(
             train_ds,
@@ -41,11 +44,38 @@ def run_cross_validation(data_dir, config):
 
         trainer = Trainer(model, class_weights, config, fold_idx=fold_idx)
 
-        for epoch in range(1, config.get('epochs', 30) + 1):
+        # ================================
+        # 🔁 RESUME CHECKPOINT
+        # ================================
+        checkpoint_path = os.path.join(
+            config['checkpoint_dir'],
+            f'best_model_fold{fold_idx}.pt'
+        )
+
+        start_epoch = 1
+
+        if os.path.exists(checkpoint_path):
+            print(f"🔁 Reprise fold {fold_idx} depuis checkpoint...")
+
+            ckpt = torch.load(checkpoint_path)
+
+            model.load_state_dict(ckpt['model_state'])
+            trainer.optimizer.load_state_dict(ckpt['optimizer_state'])
+
+            trainer.best_eer = ckpt['best_eer']
+            start_epoch = ckpt['epoch'] + 1
+
+            print(f"✅ Reprise à epoch {start_epoch} | best EER={trainer.best_eer:.2f}%")
+
+        # ================================
+        # 🚀 TRAINING LOOP
+        # ================================
+        for epoch in range(start_epoch, config.get('epochs', 30) + 1):
             train_loss, _ = trainer.train_epoch(train_loader, epoch)
             val_loss, val_metrics, stop = trainer.validate(val_loader, epoch)
 
             if stop:
+                print(f"⛔ Early stopping (fold {fold_idx})")
                 break
 
         fold_results.append({
@@ -55,10 +85,10 @@ def run_cross_validation(data_dir, config):
 
     eers = [r['best_eer'] for r in fold_results]
 
-    print("\nRESULTATS")
+    print("\n========== RESULTATS ==========")
     for r in fold_results:
         print(r)
 
-    print("EER moyen :", np.mean(eers))
+    print(f"\nEER moyen : {np.mean(eers):.2f}%")
 
     return fold_results
