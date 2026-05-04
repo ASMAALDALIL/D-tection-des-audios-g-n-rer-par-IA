@@ -6,7 +6,6 @@ from utils.eer import compute_all_metrics
 import os
 from torch.utils.tensorboard import SummaryWriter
 
-
 class Trainer:
     def __init__(self, model, class_weights, config, fold_idx=0):
         self.model = model
