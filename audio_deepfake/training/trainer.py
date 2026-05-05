@@ -26,17 +26,22 @@ class Trainer:
         self.patience = 0
         self.early_stop = config['early_stop_patience']
 
-        # ✅ Création des dossiers (IMPORTANT)
+        # 📁 dossiers
         os.makedirs(config['checkpoint_dir'], exist_ok=True)
         os.makedirs(config['log_dir'], exist_ok=True)
 
-        self.checkpoint_path = os.path.join(
-            config['checkpoint_dir'],
+        self.checkpoint_dir = config['checkpoint_dir']
+
+        self.best_model_path = os.path.join(
+            self.checkpoint_dir,
             f'best_model_fold{fold_idx}.pt'
         )
 
         self.writer = SummaryWriter(config['log_dir'])
 
+    # =========================
+    # TRAIN
+    # =========================
     def train_epoch(self, loader, epoch):
         self.model.train()
         loss_total = 0
@@ -66,22 +71,19 @@ class Trainer:
             labels.extend(batch['label'].cpu().numpy())
             logits.extend(out.detach().cpu().numpy())
 
-        metrics = compute_all_metrics(
-            np.array(labels),
-            np.array(logits)
-        )
-
+        metrics = compute_all_metrics(np.array(labels), np.array(logits))
         avg_loss = loss_total / len(loader)
 
-        # ✅ TensorBoard logs
         self.writer.add_scalar("Train/Loss", avg_loss, epoch)
         self.writer.add_scalar("Train/EER", metrics['eer'], epoch)
 
-        # ✅ Print debug
-        print(f"[Train][Epoch {epoch}] Loss={avg_loss:.4f} | EER={metrics['eer']:.2f}% | Acc={metrics['accuracy']:.2f}%")
+        print(f"[Train][Epoch {epoch}] Loss={avg_loss:.4f} | EER={metrics['eer']:.2f}%")
 
         return avg_loss, metrics
 
+    # =========================
+    # VALIDATION
+    # =========================
     def validate(self, loader, epoch):
         self.model.eval()
         loss_total = 0
@@ -107,21 +109,27 @@ class Trainer:
                 labels.extend(batch['label'].cpu().numpy())
                 logits.extend(out.detach().cpu().numpy())
 
-        metrics = compute_all_metrics(
-            np.array(labels),
-            np.array(logits)
-        )
-
+        metrics = compute_all_metrics(np.array(labels), np.array(logits))
         avg_loss = loss_total / len(loader)
 
-        # ✅ TensorBoard logs
         self.writer.add_scalar("Val/Loss", avg_loss, epoch)
         self.writer.add_scalar("Val/EER", metrics['eer'], epoch)
 
-        # ✅ Print debug
-        print(f"[Val  ][Epoch {epoch}] Loss={avg_loss:.4f} | EER={metrics['eer']:.2f}% | Acc={metrics['accuracy']:.2f}%")
+        print(f"[Val][Epoch {epoch}] Loss={avg_loss:.4f} | EER={metrics['eer']:.2f}%")
 
-        # ✅ Sauvegarde du meilleur modèle (CORRIGÉ)
+        # =========================
+        # 💾 1. Sauvegarde CHAQUE EPOCH
+        # =========================
+        torch.save({
+            'model_state': self.model.state_dict(),
+            'optimizer_state': self.optimizer.state_dict(),
+            'best_eer': self.best_eer,
+            'epoch': epoch
+        }, os.path.join(self.checkpoint_dir, f'checkpoint_epoch_{epoch}.pt'))
+
+        # =========================
+        # 🏆 2. Sauvegarde MEILLEUR modèle
+        # =========================
         if metrics['eer'] < self.best_eer:
             self.best_eer = metrics['eer']
 
@@ -130,10 +138,9 @@ class Trainer:
                 'optimizer_state': self.optimizer.state_dict(),
                 'best_eer': self.best_eer,
                 'epoch': epoch
-            }, self.checkpoint_path)
+            }, self.best_model_path)
 
-            print(f"✅ Nouveau meilleur modèle sauvegardé (EER: {self.best_eer:.4f})")
-
+            print(f"✅ Meilleur modèle sauvegardé (EER={self.best_eer:.4f})")
             self.patience = 0
         else:
             self.patience += 1
