@@ -14,7 +14,7 @@ CONFIG = {
     'weight_decay': 1e-4,
     'early_stop_patience': 7,
     'log_dir': 'runs/',
-    'checkpoint_dir': 'checkpoints/',
+    'checkpoint_dir': '/kaggle/working/checkpoints/',
 }
 
 if __name__ == '__main__':
