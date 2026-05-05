@@ -1,7 +1,7 @@
 from training.cross_val import run_cross_validation
 
 CONFIG = {
-    'data_dir': '/kaggle/input/datasets/meryemalmoumi/classdata/data',
+    'data_dir': '/kaggle/input/datasets/meryemalmoumi/classidata/data',
     'n_folds': 5,
     'wav2vec2_name': 'facebook/wav2vec2-base',
     'embedding_dim': 256,
