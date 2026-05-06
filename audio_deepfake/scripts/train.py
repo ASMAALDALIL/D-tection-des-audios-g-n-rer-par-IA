@@ -7,7 +7,7 @@ CONFIG = {
     'embedding_dim': 256,
     'dropout': 0.3,
     'epochs': 30,
-    'batch_size': 16,
+    'batch_size': 2,
     'num_workers': 2,
     'lr': 1e-4,
     'lr_wav2vec2': 1e-5,
