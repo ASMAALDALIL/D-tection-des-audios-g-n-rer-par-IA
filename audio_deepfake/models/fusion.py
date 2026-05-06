@@ -48,7 +48,7 @@ class FusionModel(nn.Module):
 
         self.wav2vec2 = Wav2Vec2Encoder(wav2vec2_name, embedding_dim)
         self.aasist = AASISTEncoder(embedding_dim)
-        self.rawnet = RawNet2Encoder(embedding_dim)
+        self.rawnet = None
 
         self.attn = CrossModalAttention(embedding_dim)
 
@@ -70,7 +70,7 @@ class FusionModel(nn.Module):
             for p in self.wav2vec2.parameters():
                 p.requires_grad = False
 
-    def forward(self, w2v, mel, raw):
+    def forward(self, w2v, mel, raw=None):
         e1 = self.wav2vec2(w2v)
         e2 = self.aasist(mel)
         # ❌ DISABLE RAWNET2 (GPU FIX)
