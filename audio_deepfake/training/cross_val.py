@@ -65,11 +65,10 @@ def run_cross_validation(data_dir, config):
                 weights_only=False
             )
 
-            model.load_state_dict(ckpt['model_state'])
-            trainer.optimizer.load_state_dict(ckpt['optimizer_state'])
+           model.load_state_dict(ckpt['model_state'])
 
-            trainer.best_eer = ckpt['best_eer']
-            start_epoch = ckpt['epoch'] + 1
+           trainer.best_eer = ckpt['best_eer']
+           start_epoch = ckpt['epoch'] + 1
 
             print(f"✅ Reprise à epoch {start_epoch} | best EER={trainer.best_eer:.2f}%")
 
