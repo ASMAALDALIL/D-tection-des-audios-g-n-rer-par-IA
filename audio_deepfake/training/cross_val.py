@@ -62,7 +62,8 @@ def run_cross_validation(data_dir, config):
             ckpt = torch.load(
                 checkpoint_path,
                 map_location="cpu",
-                weights_only=False
+                weights_only=False,
+                pickle_module=torch.serialization.pickle_module
             )
 
             model.load_state_dict(ckpt['model_state'])
