@@ -9,6 +9,7 @@ from training.trainer import Trainer
 
 
 def run_cross_validation(data_dir, config):
+
     file_paths, labels, class_weights = load_dataset_paths(data_dir)
     fold_results = []
 
@@ -45,7 +46,7 @@ def run_cross_validation(data_dir, config):
         trainer = Trainer(model, class_weights, config, fold_idx=fold_idx)
 
         # ================================
-        # 🔁 RESUME CHECKPOINT
+        # 🔁 RESUME CHECKPOINT SAFE
         # ================================
         checkpoint_path = os.path.join(
             config['checkpoint_dir'],
@@ -57,7 +58,12 @@ def run_cross_validation(data_dir, config):
         if os.path.exists(checkpoint_path):
             print(f"🔁 Reprise fold {fold_idx} depuis checkpoint...")
 
-            ckpt = torch.load(checkpoint_path,weights_only=False,map_location="cpu")
+            # SAFE LOAD (KAGGLE / PYTORCH 2.6 FIX)
+            ckpt = torch.load(
+                checkpoint_path,
+                map_location="cpu",
+                weights_only=False
+            )
 
             model.load_state_dict(ckpt['model_state'])
             trainer.optimizer.load_state_dict(ckpt['optimizer_state'])
@@ -71,6 +77,7 @@ def run_cross_validation(data_dir, config):
         # 🚀 TRAINING LOOP
         # ================================
         for epoch in range(start_epoch, config.get('epochs', 30) + 1):
+
             train_loss, _ = trainer.train_epoch(train_loader, epoch)
             val_loss, val_metrics, stop = trainer.validate(val_loader, epoch)
 
