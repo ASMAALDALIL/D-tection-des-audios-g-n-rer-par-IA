@@ -73,7 +73,8 @@ class FusionModel(nn.Module):
     def forward(self, w2v, mel, raw):
         e1 = self.wav2vec2(w2v)
         e2 = self.aasist(mel)
-        e3 = self.rawnet(raw)
+        # ❌ DISABLE RAWNET2 (GPU FIX)
+        e3 = torch.zeros_like(e1)
 
         fused, weights = self.attn(e1, e2, e3)
 
