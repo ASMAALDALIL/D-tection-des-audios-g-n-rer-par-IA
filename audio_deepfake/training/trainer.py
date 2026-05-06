@@ -43,6 +43,7 @@ class Trainer:
     # TRAIN
     # =========================
     def train_epoch(self, loader, epoch):
+        torch.cuda.empty_cache()
         self.model.train()
         loss_total = 0
         labels, logits = [], []
