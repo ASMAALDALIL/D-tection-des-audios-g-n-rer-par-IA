@@ -1,0 +1,10 @@
+torch>=2.0
+torchaudio>=2.0
+numpy
+scipy
+scikit-learn
+tqdm
+pandas
+matplotlib
+# optionnel — augmentation
+audiomentations
